@@ -10,6 +10,7 @@
     "express": "~3.2.4",
     "socket.io": "~0.9.14",
     "pg-promise": "3.4.1",
-    "jquery": "2.2.2"
+    "jQuery": "1.7.4",
+    "xmlhttprequest": "1.8.0"
   }
 }
