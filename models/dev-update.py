@@ -14,18 +14,20 @@ cursor = conn.cursor()
 anthro_features = ("FIRST_NAME", "LAST_NAME", "PLAYER_NAME", "HEIGHT_WO_SHOES", "HEIGHT_W_SHOES", "WEIGHT", "WINGSPAN", "STANDING_REACH", "BODY_FAT_PCT", "HAND_LENGTH", "HAND_WIDTH")
 
 # Create a temporary table for each separate data source, merge tables, and then drop temporary tables
-cursor.execute('CREATE TABLE temp_combine_anthro (%s varchar(20) NOT NULL, %s varchar(40) NOT NULL, %s varchar(60), %s numeric(2,2), %s numeric(2,2), %s numeric(3,2), %s numeric(2,2), %s numeric(3,2), %s numeric(2,2), %s numeric(2,2) %s numeric(2,2));' % anthro_features)
+# Not supposed to use %?
+cursor.execute('DROP TABLE IF EXISTS temp_combine_anthro')
+
+cursor.execute('CREATE TABLE temp_combine_anthro (%s varchar(20) NOT NULL, %s varchar(40) NOT NULL, %s varchar(60), %s numeric(4,2), %s numeric(4,2), %s numeric(5,2), %s numeric(4,2), %s numeric(5,2), %s numeric(4,2), %s numeric(4,2), %s numeric(4,2));' % anthro_features)
 
 requests_headers = {'user-agent': USER_AGENT}
 combine_anthro_url = "http://stats.nba.com/stats/draftcombineplayeranthro?LeagueID=00&SeasonYear=2015-16"
 response = requests.get(combine_anthro_url, headers = requests_headers)
 headers = response.json()['resultSets'][0]['headers']
 anthro_feature_index = [i for i,anthro_feature in enumerate(headers) if anthro_feature in anthro_features]
-anthro_feature_index = []
 player_anthro_stats = response.json()['resultSets'][0]['rowSet']
 # Insert data in temporary postgres table
 
 for row in player_anthro_stats:
-    insert_query = ("INSERT INTO temp_combine_anthro (%s)\nVALUES %s, %s, %s, %d, %d, %s, %d, %d, %d, %d, %d" % (",".join(anthro_features)))
-    insert_query += ("\nVALUES %s, %s, %s, %d, %d, %s, %d, %d, %d, %d, %d" % itemgetter(*anthro_feature_index)(row))
+    cursor.execute("""INSERT INTO temp_combine_anthro VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", itemgetter(*anthro_feature_index)(row))
 
+conn.commit()
