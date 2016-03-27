@@ -1,5 +1,6 @@
 // script that pulls from sources
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+
 var getJSON = function(url, callback) {
     var xhr = new XMLHttpRequest();
     xhr.open("get", url, true);
