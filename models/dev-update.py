@@ -13,8 +13,8 @@ PLAYER_BACKGROUND_FEATURES = ("PERSON_ID", "BIRTHDATE", "SCHOOL", "COUNTRY", "HE
 
 def create_player_background_table(cursor):
     cursor.execute("""
-    CREATE TABLE temp_player_background (PLAYER_ID integer NOT NULL, BIRTHDATE varchar(40), SCHOOL varchar(40), COUNTRY varchar(30),
-    HEIGHT varchar(5), WEIGHT integer, SEASON_EXP integer)
+    CREATE TABLE temp_player_background (PLAYER_ID integer NOT NULL, BIRTHDATE varchar(40) NULL, SCHOOL varchar(40) NULL, 
+    COUNTRY varchar(60) NULL, HEIGHT varchar(5) NULL, WEIGHT integer NULL, SEASON_EXP integer NULL) 
     """)
     return 0
     
@@ -30,7 +30,9 @@ def insert_player_background_table(cursor, player_ids):
         headers = response.json()['resultSets'][0]['headers']
         background_feature_index = [i for i, background_feature in enumerate(headers) if background_feature in PLAYER_BACKGROUND_FEATURES]
         row = response.json()['resultSets'][0]['rowSet'][0]
-        cursor.execute("""INSERT INTO temp_player_background VALUES (%s,%s,%s,%s,%s,%s,%s)""",itemgetter(*background_feature_index)(row))
+        insert_row = itemgetter(*background_feature_index)(row)
+        insert_row = tuple(None if x == '' else x for x in insert_row) 
+        cursor.execute("""INSERT INTO temp_player_background VALUES (%s,%s,%s,%s,%s,%s,%s)""",insert_row)
     return 0
 
 def create_combine_anthro_table(cursor):
@@ -81,7 +83,7 @@ def insert_active_nba_player_id_table(cursor):
     player_id_feature_index = [i for i, player_id_feature in enumerate(headers) if player_id_feature in PLAYER_ID_FEATURES]
     player_ids = []
     for row in player_id_data:
-        #cursor.execute("""INSERT INTO temp_player_id VALUES (%s, %s, %s)""", itemgetter(*player_id_feature_index)(row))
+        cursor.execute("""INSERT INTO temp_player_id VALUES (%s, %s, %s)""", itemgetter(*player_id_feature_index)(row))
         player_ids.append(row[0])
     return player_ids # return list of IDs
 
@@ -113,3 +115,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
