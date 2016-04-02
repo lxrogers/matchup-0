@@ -34,6 +34,15 @@ def insert_player_background_table(cursor, player_ids):
         insert_row = tuple(None if x == '' else x for x in insert_row) 
         cursor.execute("""INSERT INTO temp_player_background VALUES (%s,%s,%s,%s,%s,%s,%s)""",insert_row)
     return 0
+    
+def update_player_background(cursor, player_ids):
+    cursor.execute("SELECT player_id FROM temp_player_id;")
+    active_player_ids = cursor.fetchall()
+    active_player_ids = [x[0] for x in active_player_ids]
+    cursor.execute("SELECT player_id FROM temp_player_background;")
+    curr_player_ids = cursor.fetchall()
+    curr_player_ids = [x[0] for x in curr_player_ids]
+    return 0
 
 def create_combine_anthro_table(cursor):
     cursor.execute("""CREATE TABLE temp_combine_anthro (%s varchar(20) NOT NULL, %s varchar(40) NOT NULL, 
@@ -101,7 +110,32 @@ def create_box_scores(cursor):
 	FIRST_LAST varchar (40) NOT NULL)
 	""")
 	return 0
-    
+	
+def create_player_data(cursor):
+    cursor.execute("""
+    CREATE TABLE player_data (player_id integer NOT NULL, first_last varchar (40) NOT NULL,
+    height varchar(5) NULL, weight integer NULL, season_exp integer NULL, height_w_shoes numeric(4,2),
+    standing_reach numeric(5,2))
+    """)
+    return 0
+
+def insert_player_data(cursor):
+    cursor.execute("""
+    INSERT INTO player_data 
+    SELECT id.player_id, id.first_last, 
+    background.height, background.weight, background.season_exp,
+    anthro.height_w_shoes, anthro.standing_reach
+    FROM 
+    temp_player_id id 
+    LEFT JOIN
+    temp_player_background background
+    ON id.player_id = background.player_id
+    LEFT JOIN
+    temp_combine_anthro anthro
+    ON id.first_last = anthro.player_name
+    """)
+    return 0
+	
 def main():
     # Connect to data base
     conn_string = "host='localhost' dbname='development' user='postgres' password='steph43'"
@@ -115,4 +149,11 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
+
+'''
+conn_string = "host='localhost' dbname='development' user='postgres' password='steph43'"
+conn = psycopg2.connect(conn_string)
+cursor = conn.cursor()
+create_player_data(cursor)
+insert_player_data(cursor)
+'''
