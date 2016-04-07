@@ -35,13 +35,21 @@ def insert_player_background_table(cursor, player_ids):
         cursor.execute("""INSERT INTO temp_player_background VALUES (%s,%s,%s,%s,%s,%s,%s)""",insert_row)
     return 0
     
-def update_player_background(cursor, player_ids):
+def update_player_background(cursor, drop = False):
+    if drop:
+        drop_player_background_table(cursor)
+    create_player_background_table(cursor)
     cursor.execute("SELECT player_id FROM temp_player_id;")
     active_player_ids = cursor.fetchall()
     active_player_ids = [x[0] for x in active_player_ids]
     cursor.execute("SELECT player_id FROM temp_player_background;")
     curr_player_ids = cursor.fetchall()
     curr_player_ids = [x[0] for x in curr_player_ids]
+    player_ids_to_add = []
+    for active_player_id in active_player_ids:
+        if active_player_id not in curr_player_ids:
+            player_ids_to_add.append(active_player_id)
+    insert_player_background_table(cursor, player_ids_to_add)
     return 0
 
 def create_combine_anthro_table(cursor):
@@ -110,7 +118,11 @@ def create_box_scores(cursor):
 	FIRST_LAST varchar (40) NOT NULL)
 	""")
 	return 0
-	
+
+def drop_player_data(cursor):
+    cursor.execute('DROP TABLE IF EXISTS player_data')
+    return 0
+    
 def create_player_data(cursor):
     cursor.execute("""
     CREATE TABLE player_data (player_id integer NOT NULL, first_last varchar (40) NOT NULL,
@@ -135,6 +147,12 @@ def insert_player_data(cursor):
     ON id.first_last = anthro.player_name
     """)
     return 0
+
+def update_player_data(cursor):
+    drop_player_data(cursor)
+    create_player_data(cursor)
+    insert_player_data(cursor)
+    return 0
 	
 def main():
     # Connect to data base
@@ -142,8 +160,13 @@ def main():
     conn = psycopg2.connect(conn_string)
     cursor = conn.cursor()
     print "Running"
-    #drop_combine_anthro_table(cursor)
+    update_active_nba_player_id_table(cursor)
+    update_player_background(cursor)
     update_combine_anthro_table(cursor)
+    update_player_data(cursor)
+    drop_active_nba_player_id_table(cursor)
+    drop_player_background_table(cursor)
+    drop_combine_anthro_table(cursor)
     conn.commit()
     conn.close()
 
