@@ -25,62 +25,32 @@ var games_updating = 0;
 var router = express();
 var server = http.createServer(router);
 var io = socketio.listen(server);
+router.use(express.static(__dirname + '/public'));
+router.set('view engine', 'jade');
+router.set('views', './public/views')
+io.set('log level', 1);
 
-router.use(express.static(path.resolve(__dirname, 'client')));
-var messages = [];
+//router.use(express.static(path.resolve(__dirname, 'client')));
+router.get('/', function (req, res) {
+  res.render('index', { title: 'Hey', message: 'Hello there!'});
+});
 var sockets = [];
 
 //matchup data
-var schedule = null; //holds tools.Schedule Object 
+var schedule = {}; // map of gameID -> scheduleGame
 var liveGames = {}; // map of gameID -> liveGame 
+var playerData = {}; // map of Player key -> data object
 
 io.on('connection', function (socket) {
-    messages.forEach(function (data) {
-      socket.emit('message', data);
-    });
-
+    socket.emit('liveupdate', packageLiveGames());
+  
     sockets.push(socket);
 
     socket.on('disconnect', function () {
       sockets.splice(sockets.indexOf(socket), 1);
-      updateRoster();
     });
-
-    socket.on('message', function (msg) {
-      var text = String(msg || '');
-
-      if (!text)
-        return;
-
-      socket.get('name', function (err, name) {
-        var data = {
-          name: name,
-          text: text
-        };
-
-        broadcast('message', data);
-        messages.push(data);
-      });
-    });
-
-    socket.on('identify', function (name) {
-      socket.set('name', String(name || 'Anonymous'), function (err) {
-        updateRoster();
-      });
-    });
+    
   });
-
-function updateRoster() {
-  async.map(
-    sockets,
-    function (socket, callback) {
-      socket.get('name', callback);
-    },
-    function (err, names) {
-      broadcast('roster', names);
-    }
-  );
-}
 
 function broadcast(event, data) {
   sockets.forEach(function (socket) {
@@ -94,33 +64,61 @@ server.listen(process.env.PORT || 3000, process.env.IP || "0.0.0.0", function(){
 });
 
 //Update Schedule
-function updateSchedule() {
+function updateSchedule(callback) {
   tools.getSchedule(tools.getEasternTimezoneDate(), function(err, _schedule) {
     schedule = _schedule;
     console.log(_schedule);
+    if (callback) callback();
   });
 }
 
 //update livegames using schedule
 function updateLiveGames(callback) {
-  games_updating = schedule.scheduleGames.length;
-  schedule.scheduleGames.forEach(function(scheduleGame) {
-    var liveGame = tools.getLiveGame(scheduleGame.gameID, function(err, liveGame) {
+  games_updating = Object.keys(schedule).length
+  
+  for (var gid in schedule) {
+    tools.getLiveGame(gid, function(err, liveGame) {
       var key = "" + liveGame.gameID;
-      updateLiveGame(key, liveGame)
+      updateLiveGame(key, liveGame);
     });
-  });
+  }
 }
 
 function updateLiveGame(key, liveGame) {
   liveGames[key] = liveGame;
-  //broadcast('message', {name: "hey", text:"hi"});
   
   games_updating -= 1;
-  console.log('broadcasting update ' + key + " games left: " + games_updating)
-  if (games_updating == 0)
-    broadcast('liveupdate', liveGames);
   
+  if (games_updating == 0)
+    console.log('broadcasting update')
+    broadcast('liveupdate', packageLiveGames());
+}
+
+function packageLiveGames() {
+  var package = [];
+  
+  //convert to array
+  for (var propertyName in liveGames) {
+    package.push(liveGames[propertyName]);
+  }
+  
+  //sort by quarter
+  package.sort(function(a, b) {
+    return (a.order - b.order);
+  })
+  //break into triplets
+  var tripletPackage = []
+            
+  for (var i = 0; i < package.length; i++) {
+    var tripletIndex = Math.floor(i / 3);
+    
+    if (tripletIndex % 3 == 0) {
+      tripletPackage.push([])
+    }
+    tripletPackage[tripletIndex].push(package[i]);
+  }
+  
+  return tripletPackage;
 }
 
 var count = 0;
@@ -129,4 +127,4 @@ setInterval(function() {
   updateLiveGames();
 }, 10000)
 
-updateSchedule();
+updateSchedule(updateLiveGames);

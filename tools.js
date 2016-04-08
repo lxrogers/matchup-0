@@ -1,6 +1,11 @@
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+var time = require('./time');
 
 var exports = module.exports = {};
+
+exports.newFunction = function(param1, param2) {
+  
+}
 
 exports.get = function(url, callback) {
     var xhr = new XMLHttpRequest();
@@ -38,7 +43,7 @@ function getSIGameScheduleUrl(date) {
 
 function getTodayDateString(d) {
     var dateString = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
-    console.log(d, dateString);
+    console.log("datestring", d, dateString);
     return dateString;
 }
 
@@ -55,18 +60,15 @@ exports.getSchedule = function(date, callback) {
 
 function constructSchedule(schedule_data) {
   var schedule_json = JSON.parse(schedule_data);
-  var schedule = {
-    scheduleGames : constructScheduleGames(schedule_json['apiResults'][0]['league']['season']['eventType'][0]['events'])
-  }
-  return schedule;
-}
-
-function constructScheduleGames(events_data) {
-  var scheduleGames = [];
+  var events_data = schedule_json['apiResults'][0]['league']['season']['eventType'][0]['events'];
+  
+  var schedule = {}
   events_data.forEach(function(event) {
-    scheduleGames.push(constructScheduleGame(event));
+    var scheduleGame = constructScheduleGame(event);
+    schedule[scheduleGame.gameID] = scheduleGame;
   })
-  return scheduleGames;
+  
+  return schedule;
 }
 
 function constructScheduleGame(event_data) {
@@ -87,11 +89,13 @@ function constructScheduleGame(event_data) {
 exports.getLiveGame = function(gameID, callback) {
     var url = getSIGameDetailsUrl(gameID);
     exports.get(url, function(err, data) {
+      if (err) {
+        console.log("error: ", err)
+      }
       var liveGameJSON = JSON.parse(data);
       var liveGame = constructLiveGame(liveGameJSON);
       if (callback)
         callback(err, liveGame);
-      //callback(err, require('./boxscore_live.json'));
     });
 };
 
@@ -99,10 +103,20 @@ function constructLiveGame(liveGameJSON) {
   var event_data = liveGameJSON['apiResults'][0]['league']['season']['eventType'][0]['events'][0];
   var liveGame = {
     gameID : event_data['eventId'],
-    status : event_data['eventStatus'],
-    boxscores : event_data['boxscores']
+    isActive : event_data['eventStatus'].isActive,
+    boxscores : event_data['boxscores'],
+    teams : event_data['teams'],
+    timetag : time.getTimeTag(event_data['eventStatus']),
+    order : getOrder(event_data['eventStatus'], event_data['eventId'])
   };
   return liveGame;
+}
+
+function getOrder(status, gameID) {
+  if (status.isActive || status.period == 2) 
+    return gameID - 10000;
+  else
+    return gameID;
 }
 
 exports.getEasternTimezoneDate = function() {
@@ -110,7 +124,7 @@ exports.getEasternTimezoneDate = function() {
   var local_time = local_date.getTime();
   var local_offset = local_date.getTimezoneOffset() * 60000;
   var utc = local_time + local_offset;
-  var offset = -4;
+  var offset = -7;
   var et = utc + (3600000*offset);
   return new Date(et);
 }
