@@ -141,7 +141,7 @@ def insert_player_data(cursor):
     background.height, background.weight, background.season_exp, background.position,
     anthro.height_w_shoes, anthro.standing_reach, 
     bs.age, bs.gp, bs.min, bs.fgm, bs.fga, bs.fg_pct, bs.fg3m, bs.fg3a, bs.fg3_pct,
-    bs.ftm, bs.fta, bs.ft_pct, bs.oreb, bs.dreb, bs.ast, bs.tov, bs.ast, bs.plus_minus
+    bs.ftm, bs.fta, bs.ft_pct, bs.oreb, bs.dreb, bs.ast, bs.tov, bs.pts, bs.plus_minus
     FROM 
     temp_player_id id 
     LEFT JOIN
