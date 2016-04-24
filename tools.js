@@ -1,5 +1,6 @@
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 var time = require('./time');
+var tonydb = require('./tonydb')
 
 var exports = module.exports = {};
 
@@ -104,11 +105,12 @@ function constructLiveGame(liveGameJSON) {
   var liveGame = {
     gameID : event_data['eventId'],
     isActive : event_data['eventStatus'].isActive,
-    boxscores : event_data['boxscores'],
     teams : event_data['teams'],
     timetag : time.getTimeTag(event_data['eventStatus']),
     order : getOrder(event_data['eventStatus'], event_data['eventId'])
   };
+  liveGame['teams'][0]['boxscore'] = event_data['boxscores'][0];
+  liveGame['teams'][1]['boxscore'] = event_data['boxscores'][1];
   return liveGame;
 }
 
@@ -128,3 +130,30 @@ exports.getEasternTimezoneDate = function() {
   var et = utc + (3600000*offset);
   return new Date(et);
 }
+
+function getKeyFromPlayer(player) {
+  return ""+player.player.firstName + " " + player.player.lastName;
+}
+
+function extraFormatThen(gameData, playerData, callback) {
+  
+}
+
+exports.getPlayerData = function(gameData, callback) {
+  var team1 = gameData.teams[0]['boxscore'].playerstats;
+  var team2 = gameData.teams[1]['boxscore'].playerstats;
+  var playerKeys = [];
+  for (var player in team1) {
+    playerKeys.push(getKeyFromPlayer(team1[player]));
+  }
+  
+  for (var player in team2) {
+    playerKeys.push(getKeyFromPlayer(team2[player]));
+  }
+  //console.log(playerKeys);
+  tonydb.getPlayerData(playerKeys, callback);
+  //make db call to tony db
+}
+
+
+

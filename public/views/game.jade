@@ -1,0 +1,91 @@
+doctype html
+html(lang='en', ng-app='app')
+  include ./includes/header.jade
+  script(src='https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js')
+  script.
+    function GameController($scope) {
+        var socket = io.connect();
+        $scope.myGame = {};
+        $scope.playerData = {};
+        $scope.selectedStat = "height";
+        //$scope.schedule ID -> information that won't change
+        //$scope.livegamedata ID -> information that changes
+        //$scope.order sorted groups of three IDs sorted
+        $scope.gid = window.location.href.substr(window.location.href.lastIndexOf('/') + 1);
+        var updateEvent = $scope.gid + "update";
+        var dataEvent = "data";
+        console.log("game id: " + $scope.gid);
+        
+        socket.on('connect', function () {
+          //store all player data here somehow
+        });
+        
+        socket.on(updateEvent, function(game) {
+            console.log("gameupdate " + game);
+            //console.log(game.teams[0].boxscore.playerstats);
+            $scope.myGame = game;
+            $scope.$apply();
+        });
+        
+        socket.on(dataEvent, function(playerData) {
+            console.log("data " + playerData[0]);
+            $scope.playerData = playerData[$scope.gid];
+            console.log($scope.playerData);
+            $scope.$apply();
+        });
+        
+        $scope.changeStat = function() {
+          console.log("hey:" + $scope.selectedStat)
+        }
+    }
+    GameController.$inject = ['$scope'];
+    angular.module('app', []).controller('GameController', GameController);
+  body
+  .section.title
+      .container
+        #logo.row
+          a(href="/"): h1 Matchup!
+        #headline.row
+          h2 #{livegame.teams[0].location} #{livegame.teams[0].nickname} vs. #{livegame.teams[1].location} #{livegame.teams[1].nickname}
+    .section.games
+      .container(ng-controller='GameController')
+        #scoreline.row
+          .two.columns
+            h4(ng-bind="myGame.teams[0].score")
+          .eight.columns
+            h4(ng-bind='myGame.timetag')
+          .two.columns
+            h4(ng-bind="myGame.teams[1].score")
+        .row 
+          select(ng-change="changeStat()" ng-model="selectedStat")
+            option(value='height') Height
+            option(value='weight') Weight
+        .row
+          .one.column
+            br
+          .five.columns.left
+            h5(ng-bind="myGame.teams[0].nickname")
+            table.player-table(align="left")
+              thead
+                th Current Lineup
+                th(ng-bind="selectedStat")
+              tbody
+                tr(ng-repeat="player in myGame.teams[0]['boxscore'].playerstats")
+                  td(ng-if="player.onCourt == 'true'" ng-bind="player.player.firstName + ' ' + player.player.lastName")
+                  td(ng-if="player.onCourt == 'true'" ng-bind="playerData[player.player.firstName + ' ' + player.player.lastName][selectedStat]")
+                  
+          .five.columns.right
+            h5(ng-bind="myGame.teams[1].nickname")
+            table.player-table(align="right")
+              thead
+                th Current Lineup
+                th(ng-bind="selectedStat")
+              tbody
+                tr(ng-repeat="player in myGame.teams[1]['boxscore'].playerstats")
+                  td(ng-if="player.onCourt == 'true'" ng-bind="player.player.firstName + ' ' + player.player.lastName")
+                  td(ng-if="player.onCourt == 'true'" ng-bind="playerData[player.player.firstName + ' ' + player.player.lastName][selectedStat]")
+          
+          
+                      
+                    
+    include ./includes/footer.jade
