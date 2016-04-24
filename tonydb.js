@@ -50,3 +50,4 @@ var todays_players = ["Dwyane Wade", "LeBron James", "Kevin Durant"];
 
 exports.getPlayerData(todays_players, printData)
 pgp.end();
+

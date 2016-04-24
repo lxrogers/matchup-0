@@ -1,0 +1,64 @@
+doctype html
+html(lang='en', ng-app='app')
+  head
+    title Matchup Test
+    // Basic Page Needs ––––––––––––––––––––––––––––––––––––––––––––––––––
+    meta(charset='utf-8')
+    title Your page title here :)
+    meta(name='description', content='')
+    meta(name='author', content='')
+    //
+      Mobile Specific Metas
+      ––––––––––––––––––––––––––––––––––––––––––––––––––
+    meta(name='viewport', content='width=device-width, initial-scale=1')
+    //
+      FONT
+      ––––––––––––––––––––––––––––––––––––––––––––––––––
+    link(href='//fonts.googleapis.com/css?family=Raleway:400,300,600', rel='stylesheet', type='text/css')
+    //
+      CSS
+      ––––––––––––––––––––––––––––––––––––––––––––––––––
+    link(rel='stylesheet', href='/assets/css/normalize.css')
+    link(rel='stylesheet', href='/assets/css/skeleton.css')
+    link(rel='stylesheet', href='/assets/css/custom.css')
+    script(src='https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js')
+    script.
+      function MatchupController($scope) {
+      var socket = io.connect();
+      $scope.liveGameTriplets = [];
+      //$scope.schedule ID -> information that won't change
+      //$scope.livegamedata ID -> information that changes
+      //$scope.order sorted groups of three IDs sorted
+      socket.on('connect', function () {
+      });
+      socket.on('liveupdate', function(liveGames) {
+      console.log("liveupdate " + liveGames.length);
+      $scope.liveGameTriplets = liveGames;
+      $scope.$apply();
+      });
+      }
+      MatchupController.$inject = ['$scope'];
+      angular.module('app', []).controller('MatchupController', MatchupController);
+  body
+    .section.title
+      .container
+        .row
+          h1 Matchup!
+    .section.games
+      .container(ng-controller='MatchupController')
+        .row(ng-repeat='liveGameTriplet in liveGameTriplets', style='padding-bottom: 5%')
+          .four.columns.game-box(ng-repeat='liveGame in liveGameTriplet')
+            .game-box-content
+              table.score-table
+                thead
+                  th(ng-bind='liveGame.timetag')
+                tbody
+                  tr
+                    td(ng-bind='liveGame.teams[0].location')
+                    td(ng-bind='liveGame.teams[0].score')
+                  tr
+                    td(ng-bind='liveGame.teams[1].location')
+                    td(ng-bind='liveGame.teams[1].score')
+    script(src='/socket.io/socket.io.js')
+    script(src='/assets/js/jquery.min.js')
+    script(src='/assets/js/bootstrap.min.js')

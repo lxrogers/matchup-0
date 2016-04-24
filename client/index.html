@@ -1,107 +1,98 @@
 <!doctype html>
-<html lang="en" ng-app>
+<html lang="en" ng-app="app">
   <head>
     <title>Matchup Test</title></title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/css/bootstrap-responsive.min.css">
-    <style>
-      body {
-        padding-top: 60px;
-      }
-    </style>
-    <script>
-      function MatchupController($scope) {
-        var socket = io.connect();
-        $scope.liveGames = {};
+      <!-- Basic Page Needs –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+      <meta charset="utf-8">
+      <title>Your page title here :)</title>
+      <meta name="description" content="">
+      <meta name="author" content="">
+      
+      <!-- Mobile Specific Metas
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      
+      <!-- FONT
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+      <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+      
+      <!-- CSS
+      –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+      <link rel="stylesheet" href="css/normalize.css">
+      <link rel="stylesheet" href="css/skeleton.css">
+      <link rel="stylesheet" href="css/custom.css">
+      
+      <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js"></script>
+
+      <script>
+        function MatchupController($scope) {
+          var socket = io.connect();
+          $scope.liveGameTriplets = [];
+          
+          //$scope.schedule ID -> information that won't change 
+          //$scope.livegamedata ID -> information that changes 
+          //$scope.order sorted groups of three IDs sorted
+    
+          socket.on('connect', function () {
+            
+          });
+          
+          socket.on('liveupdate', function(liveGames) {
+            console.log("liveupdate " + liveGames.length);
+            $scope.liveGameTriplets = liveGames;
+            $scope.$apply();
+          });
+        }
         
-        $scope.messages = [];
-        $scope.roster = [];
-        $scope.name = '';
-        $scope.text = '';
-
-        socket.on('connect', function () {
-          $scope.setName();
-        });
-        
-        socket.on('liveupdate', function(liveGames) {
-          $scope.liveGames = liveGames;
-          console.log("liveupdate ");
-          $scope.$apply();
-        });
-        
-        socket.on('message', function (msg) {
-          $scope.messages.push(msg);
-          $scope.$apply();
-        });
-
-        socket.on('roster', function (names) {
-          $scope.roster = names;
-          $scope.$apply();
-        });
-
-        $scope.send = function send() {
-          console.log('Sending message:', $scope.text);
-          socket.emit('message', $scope.text);
-          $scope.text = '';
-        };
-
-        $scope.setName = function setName() {
-          socket.emit('identify', $scope.name);
-        };
-      }
-    </script>
+        MatchupController.$inject = ['$scope'];
+        angular.module('app', []).controller('MatchupController', MatchupController);
+      </script>
   </head>
+  
   <body>
-    <div class="container" ng-controller="MatchupController">
-      <div class="navbar navbar-fixed-top navbar-inverse">
-        <div class="navbar-inner">
-          <div class="pull-right">
-            <a href="https://c9.io" class="brand">Cloud9 IDE</a>
-          </div>
-        </div>
-      </div>
-      <div class="page-header">
-        <h1>Matchup Test</h1>
-      </div>
-      <div class="row">
-        <div class="span3">
-          <ul class="nav nav-list well">
-            <li class="nav-header">Local Users</li>
-            <li ng-repeat="user in roster" ng-bind="user">
-            </li>
-          </ul>
-        </div>
-        <div class="span9">
-          <table class="table table-striped table-bordered">
-            <thead>
-              <tr>
-                <th class="span2">Name</th>
-                <th class="span7">Text</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr ng-repeat="liveGame in liveGames">
-                <td class="span2" ng-bind="liveGame.gameID"></td>
-                <td class="span7" ng-bind="liveGame.status"></td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="row controls">
-            <form ng-submit="send()">
-              <div class="span2"><input type="text" class="input-block-level" ng-model="name" ng-change="setName()" placeholder="Your Name"></div>
-              <div class="input-append span7">
-                <input type="text" class="span6" ng-model="text" placeholder="Message">
-                <input type="submit" class="span1 btn btn-primary" value="Send" ng-disabled="!text">
-              </div>
-            </form>
-          </div>
+    <div class="section title">
+      <div class="container">
+        <div class="row">
+          <h1>Matchup!</h1>  
         </div>
       </div>
     </div>
+    
+    <div class ="section games">
+      <div class="container" ng-controller="MatchupController">
+        
+        <div ng-repeat="liveGameTriplet in liveGameTriplets" class="row" style="padding-bottom: 5%">
+          
+          <div ng-repeat="liveGame in liveGameTriplet" class="four columns game-box">
+            <div class="game-box-content">
+              
+              <table class="score-table">
+                <thead>
+                  <th ng-bind="liveGame.timetag"></th>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td ng-bind="liveGame.teams[0].location"></td>
+                    <td ng-bind="liveGame.teams[0].score"></td>
+                  </tr>
+                  <tr>
+                    <td ng-bind="liveGame.teams[1].location"></td>
+                    <td ng-bind="liveGame.teams[1].score"></td>
+                  </tr>
+               </tbody>
+              </table>
+            
+            </div>
+          </div>
+        </div>
+        
+        
+      </div>
+    </div>
+  
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/jquery.min.js"></script>
     <script src="/js/bootstrap.min.js"></script>
-    <script src="/js/angular.min.js"></script>
+    
   </body>
 </html>
