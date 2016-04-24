@@ -12,8 +12,10 @@ var socketio = require('socket.io');
 var express = require('express');
 
 var tools = require('./tools')
+var tonydb = require('./tonydb')
 
 var games_updating = 0;
+var retrieved_player_data = false;
 //
 // ## SimpleServer `SimpleServer(obj)`
 //
@@ -32,28 +34,41 @@ io.set('log level', 1);
 
 //router.use(express.static(path.resolve(__dirname, 'client')));
 router.get('/', function (req, res) {
-  res.render('index', { title: 'Hey', message: 'Hello there!'});
+  res.render('index');
 });
-var sockets = [];
+
+router.get('/game/:gameid', function(req, res) {
+  var gid = req.params.gameid;
+  //console.log(packageGameResponse(gid));
+  res.render('game', {'gameid': gid, 'livegame': packageGameResponse(gid)});
+  //res.send("gameid is set to " + req.params.gameid);
+});
+
+var matchupSockets = [];
 
 //matchup data
 var schedule = {}; // map of gameID -> scheduleGame
 var liveGames = {}; // map of gameID -> liveGame 
-var playerData = {}; // map of Player key -> data object
+var playerData = {}; // map of GameID -> Player key -> data object
 
 io.on('connection', function (socket) {
+    console.log("socket connected " + socket);
+    console.log("emitting to socket: ",Object.keys(playerData).length)
     socket.emit('liveupdate', packageLiveGames());
-  
-    sockets.push(socket);
-
+    socket.emit('data', playerData);
+    
+    
+    matchupSockets.push(socket);
+    
     socket.on('disconnect', function () {
-      sockets.splice(sockets.indexOf(socket), 1);
+      matchupSockets.splice(matchupSockets.indexOf(socket), 1);
     });
+    updateGameClients();
     
   });
 
 function broadcast(event, data) {
-  sockets.forEach(function (socket) {
+  matchupSockets.forEach(function (socket) {
     socket.emit(event, data);
   });
 }
@@ -67,14 +82,34 @@ server.listen(process.env.PORT || 3000, process.env.IP || "0.0.0.0", function(){
 function updateSchedule(callback) {
   tools.getSchedule(tools.getEasternTimezoneDate(), function(err, _schedule) {
     schedule = _schedule;
-    console.log(_schedule);
     if (callback) callback();
   });
+}
+
+function updatePlayerData() {
+  playerData = {};
+  for (var gameid in liveGames) {
+    (function(id) {
+      if (liveGames[id].timetag == "hasn't started yet") {
+        console.log(id + "hasn't started")
+      }
+      console.log("retrieving ", id)
+      tools.getPlayerData(liveGames[id], function(error, data) {
+        playerData[id] = data;
+        console.log("retrieved ", id);
+        //console.log(playerData);
+      });
+    })(gameid)
+    
+    //TODO add sempahore here
+  }
+  retrieved_player_data = true;
 }
 
 //update livegames using schedule
 function updateLiveGames(callback) {
   games_updating = Object.keys(schedule).length
+  
   
   for (var gid in schedule) {
     tools.getLiveGame(gid, function(err, liveGame) {
@@ -88,10 +123,27 @@ function updateLiveGame(key, liveGame) {
   liveGames[key] = liveGame;
   
   games_updating -= 1;
-  
-  if (games_updating == 0)
-    console.log('broadcasting update')
+  if (games_updating == 0) {
+    console.log("broadcasting update");
     broadcast('liveupdate', packageLiveGames());
+    if (retrieved_player_data === false) {
+      updatePlayerData();
+    }
+  }
+}
+
+function updateGameClients() {
+  console.log("updating game clients");
+  for (var propertyName in liveGames) {
+    broadcast(propertyName + "update", liveGames[propertyName])
+  }
+}
+
+function packageGameResponse(gameid) {
+  //need tagline, relevant players
+  var response = {};
+  //console.log("response package" + liveGames[gameid])
+  return liveGames[gameid];
 }
 
 function packageLiveGames() {
@@ -99,6 +151,7 @@ function packageLiveGames() {
   
   //convert to array
   for (var propertyName in liveGames) {
+    //console.log(propertyName);
     package.push(liveGames[propertyName]);
   }
   
@@ -121,10 +174,18 @@ function packageLiveGames() {
   return tripletPackage;
 }
 
-var count = 0;
+//live game data for front page
 setInterval(function() {
-  console.log("UPDATING GAMES");
+  console.log("UPDATING HOME PAGE");
   updateLiveGames();
 }, 10000)
 
 updateSchedule(updateLiveGames);
+
+//live game data for games
+setInterval(function() {
+  console.log("UPDATING GAME PAGES");
+  //get map of gameid->teams->players
+  updateGameClients();
+}, 10000)
+
