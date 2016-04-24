@@ -36,7 +36,7 @@ exports.getPlayerData = function(player_names, callback) {
     // store answer
     // call callback function on answer
     //callback(data);
-    db.any("SELECT * FROM player_data WHERE first_last in ($1^);", pgp.as.csv(player_names)).then(function (data) {
+    db.any("SELECT * FROM player_data WHERE first_last in ($1:csv);", player_names).then(function (data) {
         //do stuff to data
         callback('success', indexBy(data, 'first_last'));
     })
@@ -99,5 +99,8 @@ exports.getLineupDataForTeam("Miami Heat", function(error, data) {
     var key = exports.getLineupKey(test_players)
     console.log(data[key])  
 })
+
+exports.getPlayerData(todays_players, printData)
+
 
 pgp.end();
