@@ -10,7 +10,7 @@ PLAYER_ID_FEATURES = ("PERSON_ID", "DISPLAY_LAST_COMMA_FIRST", "DISPLAY_FIRST_LA
 PLAYER_BACKGROUND_FEATURES = ("PERSON_ID", "BIRTHDATE", "SCHOOL", "COUNTRY", "HEIGHT", "WEIGHT", "SEASON_EXP")
 BOX_SCORE_PER_GAME_FEATURES = [u'PLAYER_ID', u'AGE', u'GP', u'MIN', u'FGM', u'FGA', u'FG_PCT', 
     u'FG3M', u'FG3A', u'FG3_PCT', u'FTM', u'FTA', u'FT_PCT', u'OREB', u'DREB', u'AST', u'TOV', u'PTS', u'PLUS_MINUS']
-LINEUP_BOX_SCORE_PER_GAME_FEATURES = [u'GROUP_NAME', u'GP', u'MIN', u'FGM', u'FGA', u'FG_PCT', 
+LINEUP_BOX_SCORE_PER_GAME_FEATURES = [u'GROUP_NAME', u'TEAM_ID', u'GP', u'MIN', u'FGM', u'FGA', u'FG_PCT', 
     u'FG3M', u'FG3A', u'FG3_PCT', u'FTM', u'FTA', u'FT_PCT', u'OREB', u'DREB', u'AST', u'TOV', u'PTS', u'PLUS_MINUS']
     
 # Create a temporary table for each separate data source, merge tables, and then drop temporary tables
@@ -203,7 +203,7 @@ def drop_lineup_traditional_stats(cursor):
 
 def create_lineup_traditional_stats(cursor):
     cursor.execute("""
-    CREATE TABLE lineup_traditional_stats (group_name varchar(200) NOT NULL, gp integer NOT NULL,
+    CREATE TABLE lineup_traditional_stats (group_name varchar(200) NOT NULL, team_id varchar(40) NOT NULL, gp integer NOT NULL,
     min numeric(3,1) NULL, fgm numeric(3,1) NULL, fga numeric(3,1) NULL, fg_pct numeric(4,3) NULL, fg3m numeric (3,1) NULL, 
     fg3a numeric(3,1) NULL, fg3_pct numeric(4,3) NULL, ftm numeric(3,1) NULL, fta numeric(3,1) NULL , ft_pct numeric(4,3) NULL, 
     oreb numeric(3,1) NULL, dreb numeric(3,1) NULL, ast numeric(3,1) NULL, tov numeric(2,1) NULL, pts numeric(3,1) NULL, 
