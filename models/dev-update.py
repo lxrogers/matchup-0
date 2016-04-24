@@ -7,7 +7,7 @@ import db_constants
 
 ANTHRO_FEATURES = ("FIRST_NAME", "LAST_NAME", "PLAYER_NAME", "HEIGHT_WO_SHOES", "HEIGHT_W_SHOES", "WEIGHT", "WINGSPAN", "STANDING_REACH", "BODY_FAT_PCT", "HAND_LENGTH", "HAND_WIDTH")
 PLAYER_ID_FEATURES = ("PERSON_ID", "DISPLAY_LAST_COMMA_FIRST", "DISPLAY_FIRST_LAST")
-PLAYER_BACKGROUND_FEATURES = ("PERSON_ID", "BIRTHDATE", "SCHOOL", "COUNTRY", "HEIGHT", "WEIGHT", "SEASON_EXP")
+PLAYER_BACKGROUND_FEATURES = ("PERSON_ID", "BIRTHDATE", "SCHOOL", "COUNTRY", "HEIGHT", "WEIGHT", "SEASON_EXP", "POSITION")
 BOX_SCORE_PER_GAME_FEATURES = [u'PLAYER_ID', u'AGE', u'GP', u'MIN', u'FGM', u'FGA', u'FG_PCT', 
     u'FG3M', u'FG3A', u'FG3_PCT', u'FTM', u'FTA', u'FT_PCT', u'OREB', u'DREB', u'AST', u'TOV', u'PTS', u'PLUS_MINUS']
 LINEUP_BOX_SCORE_PER_GAME_FEATURES = [u'GROUP_NAME', u'TEAM_ID', u'GP', u'MIN', u'FGM', u'FGA', u'FG_PCT', 
@@ -19,7 +19,7 @@ LINEUP_BOX_SCORE_PER_GAME_FEATURES = [u'GROUP_NAME', u'TEAM_ID', u'GP', u'MIN', 
 def create_player_background_table(cursor):
     cursor.execute("""
     CREATE TABLE temp_player_background (PLAYER_ID integer NOT NULL, BIRTHDATE varchar(40) NULL, SCHOOL varchar(40) NULL, 
-    COUNTRY varchar(60) NULL, HEIGHT varchar(5) NULL, WEIGHT integer NULL, SEASON_EXP integer NULL) 
+    COUNTRY varchar(60) NULL, HEIGHT varchar(5) NULL, WEIGHT integer NULL, SEASON_EXP integer NULL, POSITION varchar(40) NULL) 
     """)
     return 0
     
@@ -37,7 +37,7 @@ def insert_player_background_table(cursor, player_ids):
         row = response.json()['resultSets'][0]['rowSet'][0]
         insert_row = itemgetter(*background_feature_index)(row)
         insert_row = tuple(None if x == '' else x for x in insert_row) 
-        cursor.execute("""INSERT INTO temp_player_background VALUES (%s,%s,%s,%s,%s,%s,%s)""",insert_row)
+        cursor.execute(cursor.mogrify("""INSERT INTO temp_player_background VALUES %s""",(insert_row,)))
     return 0
     
 def update_player_background(cursor, drop = False):
@@ -125,7 +125,7 @@ def drop_player_data(cursor):
 def create_player_data(cursor):
     cursor.execute("""
     CREATE TABLE player_data (player_id integer NOT NULL, first_last varchar (40) NOT NULL,
-    height varchar(5) NULL, weight integer NULL, season_exp integer NULL, height_w_shoes numeric(4,2),
+    height varchar(5) NULL, weight integer NULL, season_exp integer NULL, position varchar(40) NULL, height_w_shoes numeric(4,2),
     standing_reach numeric(5,2), age integer NULL, gp integer NULL,
     min numeric(3,1) NULL, fgm numeric(3,1) NULL, fga numeric(3,1) NULL, fg_pct numeric(4,3) NULL, fg3m numeric (3,1) NULL, 
     fg3a numeric(3,1) NULL, fg3_pct numeric(4,3) NULL, ftm numeric(3,1) NULL, fta numeric(3,1) NULL , ft_pct numeric(4,3) NULL, 
@@ -138,7 +138,7 @@ def insert_player_data(cursor):
     cursor.execute("""
     INSERT INTO player_data 
     SELECT id.player_id, id.first_last, 
-    background.height, background.weight, background.season_exp,
+    background.height, background.weight, background.season_exp, background.position,
     anthro.height_w_shoes, anthro.standing_reach, 
     bs.age, bs.gp, bs.min, bs.fgm, bs.fga, bs.fg_pct, bs.fg3m, bs.fg3a, bs.fg3_pct,
     bs.ftm, bs.fta, bs.ft_pct, bs.oreb, bs.dreb, bs.ast, bs.tov, bs.ast, bs.plus_minus
@@ -203,7 +203,7 @@ def drop_lineup_traditional_stats(cursor):
 
 def create_lineup_traditional_stats(cursor):
     cursor.execute("""
-    CREATE TABLE lineup_traditional_stats (group_name varchar(200) NOT NULL, team_id varchar(40) NOT NULL, gp integer NOT NULL,
+    CREATE TABLE lineup_traditional_stats (group_name varchar(200) NOT NULL, team_id integer NOT NULL, gp integer NOT NULL,
     min numeric(3,1) NULL, fgm numeric(3,1) NULL, fga numeric(3,1) NULL, fg_pct numeric(4,3) NULL, fg3m numeric (3,1) NULL, 
     fg3a numeric(3,1) NULL, fg3_pct numeric(4,3) NULL, ftm numeric(3,1) NULL, fta numeric(3,1) NULL , ft_pct numeric(4,3) NULL, 
     oreb numeric(3,1) NULL, dreb numeric(3,1) NULL, ast numeric(3,1) NULL, tov numeric(2,1) NULL, pts numeric(3,1) NULL, 
