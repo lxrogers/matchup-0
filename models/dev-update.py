@@ -8,6 +8,8 @@ import db_constants
 ANTHRO_FEATURES = ("FIRST_NAME", "LAST_NAME", "PLAYER_NAME", "HEIGHT_WO_SHOES", "HEIGHT_W_SHOES", "WEIGHT", "WINGSPAN", "STANDING_REACH", "BODY_FAT_PCT", "HAND_LENGTH", "HAND_WIDTH")
 PLAYER_ID_FEATURES = ("PERSON_ID", "DISPLAY_LAST_COMMA_FIRST", "DISPLAY_FIRST_LAST")
 PLAYER_BACKGROUND_FEATURES = ("PERSON_ID", "BIRTHDATE", "SCHOOL", "COUNTRY", "HEIGHT", "WEIGHT", "SEASON_EXP")
+BOX_SCORE_PER_GAME_FEATURES = [u'PLAYER_ID', u'AGE', u'GP', u'MIN', u'FGM', u'FGA', u'FG_PCT', 
+    u'FG3M', u'FG3A', u'FG3_PCT', u'FTM', u'FTA', u'FT_PCT', u'OREB', u'DREB', u'AST', u'TOV', u'PTS', u'PLUS_MINUS']
 # Create a temporary table for each separate data source, merge tables, and then drop temporary tables
 # Not supposed to use %?
 
@@ -112,12 +114,6 @@ def update_active_nba_player_id_table(cursor):
 
 # Box score - get season box score once and then update each day
 # Get initial table and then update by adding each day to season totals
-def create_box_scores(cursor):
-	cursor.execute("""
-	CREATE TABLE temp_box_scores (PLAYER_ID integer NOT NULL, LAST_COMMA_FIRST varchar(40) NOT NULL, 
-	FIRST_LAST varchar (40) NOT NULL)
-	""")
-	return 0
 
 def drop_player_data(cursor):
     cursor.execute('DROP TABLE IF EXISTS player_data')
@@ -127,7 +123,11 @@ def create_player_data(cursor):
     cursor.execute("""
     CREATE TABLE player_data (player_id integer NOT NULL, first_last varchar (40) NOT NULL,
     height varchar(5) NULL, weight integer NULL, season_exp integer NULL, height_w_shoes numeric(4,2),
-    standing_reach numeric(5,2))
+    standing_reach numeric(5,2), age integer NULL, gp integer NULL,
+    min numeric(3,1) NULL, fgm numeric(3,1) NULL, fga numeric(3,1) NULL, fg_pct numeric(4,3) NULL, fg3m numeric (3,1) NULL, 
+    fg3a numeric(3,1) NULL, fg3_pct numeric(4,3) NULL, ftm numeric(3,1) NULL, fta numeric(3,1) NULL , ft_pct numeric(4,3) NULL, 
+    oreb numeric(3,1) NULL, dreb numeric(3,1) NULL, ast numeric(3,1) NULL, tov numeric(2,1) NULL, pts numeric(3,1) NULL, 
+    plus_minus numeric(3,1))
     """)
     return 0
 
@@ -136,7 +136,9 @@ def insert_player_data(cursor):
     INSERT INTO player_data 
     SELECT id.player_id, id.first_last, 
     background.height, background.weight, background.season_exp,
-    anthro.height_w_shoes, anthro.standing_reach
+    anthro.height_w_shoes, anthro.standing_reach, 
+    bs.age, bs.gp, bs.min, bs.fgm, bs.fga, bs.fg_pct, bs.fg3m, bs.fg3a, bs.fg3_pct,
+    bs.ftm, bs.fta, bs.ft_pct, bs.oreb, bs.dreb, bs.ast, bs.tov, bs.ast, bs.plus_minus
     FROM 
     temp_player_id id 
     LEFT JOIN
@@ -145,6 +147,9 @@ def insert_player_data(cursor):
     LEFT JOIN
     temp_combine_anthro anthro
     ON id.first_last = anthro.player_name
+    LEFT JOIN
+    player_traditional_stats bs
+    ON id.player_id = bs.player_id
     """)
     return 0
 
@@ -153,7 +158,42 @@ def update_player_data(cursor):
     create_player_data(cursor)
     insert_player_data(cursor)
     return 0
-	
+    
+def drop_player_traditional_stats(cursor):
+    cursor.execute('DROP TABLE IF EXISTS player_traditional_stats')
+    return 0
+
+def create_player_traditional_stats(cursor):
+    cursor.execute("""
+    CREATE TABLE player_traditional_stats (player_id integer NOT NULL, age integer NOT NULL, gp integer NOT NULL,
+    min numeric(3,1) NULL, fgm numeric(3,1) NULL, fga numeric(3,1) NULL, fg_pct numeric(4,3) NULL, fg3m numeric (3,1) NULL, 
+    fg3a numeric(3,1) NULL, fg3_pct numeric(4,3) NULL, ftm numeric(3,1) NULL, fta numeric(3,1) NULL , ft_pct numeric(4,3) NULL, 
+    oreb numeric(3,1) NULL, dreb numeric(3,1) NULL, ast numeric(3,1) NULL, tov numeric(2,1) NULL, pts numeric(3,1) NULL, 
+    plus_minus numeric(3,1))
+    """)
+    return 0
+    
+def insert_box_score_per_game(cursor):
+    # There's a parameter for LastN games!!!!
+    stats_url_per_game = "http://stats.nba.com/stats/leaguedashplayerstats?College=&Conference=&Country=&DateFrom=&DateTo=&Division=&DraftPick=&DraftYear=&GameScope=&GameSegment=&Height=&LastNGames=0&LeagueID=00&Location=&MeasureType=Base&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=PerGame&Period=0&PlayerExperience=&PlayerPosition=&PlusMinus=N&Rank=N&Season=2015-16&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&StarterBench=&TeamID=0&VsConference=&VsDivision=&Weight="
+    #stats_url_total = "http://stats.nba.com/stats/leaguedashplayerstats?College=&Conference=&Country=&DateFrom=&DateTo=&Division=&DraftPick=&DraftYear=&GameScope=&GameSegment=&Height=&LastNGames=0&LeagueID=00&Location=&MeasureType=Base&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=Totals&Period=0&PlayerExperience=&PlayerPosition=&PlusMinus=N&Rank=N&Season=2015-16&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&StarterBench=&TeamID=0&VsConference=&VsDivision=&Weight="
+    # individual percentage and lineup percentage - return individual + lineup stat 
+    requests_headers = {'user-agent': db_constants.USER_AGENT}
+    response = requests.get(stats_url_per_game, headers = requests_headers)
+    headers = response.json()['resultSets'][0]['headers']
+    box_score_data = response.json()['resultSets'][0]['rowSet']
+    box_score_per_game_feature_index = [i for i, box_score_feature in enumerate(headers) if box_score_feature in BOX_SCORE_PER_GAME_FEATURES]
+    for row in box_score_data:
+        insert_string = ("""INSERT INTO player_traditional_stats VALUES (%s)""" % ",".join(str(x) for x in itemgetter(*box_score_per_game_feature_index)(row)))
+        cursor.execute(insert_string)
+    return 0
+
+def update_player_traditional_stats(cursor):
+    drop_player_traditional_stats(cursor)
+    create_player_traditional_stats(cursor)
+    insert_box_score_per_game(cursor)
+    return 0
+
 def main():
     # Connect to data base
     conn_string = "host='localhost' dbname='development' user='postgres' password='steph43'"
@@ -163,10 +203,12 @@ def main():
     update_active_nba_player_id_table(cursor)
     update_player_background(cursor)
     update_combine_anthro_table(cursor)
+    update_player_traditional_stats(cursor)
     update_player_data(cursor)
     drop_active_nba_player_id_table(cursor)
     drop_player_background_table(cursor)
     drop_combine_anthro_table(cursor)
+    drop_player_traditional_stats(cursor)
     conn.commit()
     conn.close()
 
