@@ -10,7 +10,7 @@ PLAYER_ID_FEATURES = ("PERSON_ID", "DISPLAY_LAST_COMMA_FIRST", "DISPLAY_FIRST_LA
 PLAYER_BACKGROUND_FEATURES = ("PERSON_ID", "BIRTHDATE", "SCHOOL", "COUNTRY", "HEIGHT", "WEIGHT", "SEASON_EXP", "POSITION")
 BOX_SCORE_PER_GAME_FEATURES = [u'PLAYER_ID', u'AGE', u'GP', u'MIN', u'FGM', u'FGA', u'FG_PCT', 
     u'FG3M', u'FG3A', u'FG3_PCT', u'FTM', u'FTA', u'FT_PCT', u'OREB', u'DREB', u'AST', u'TOV', u'PTS', u'PLUS_MINUS']
-LINEUP_BOX_SCORE_PER_GAME_FEATURES = [u'GROUP_NAME', u'TEAM_ID', u'GP', u'MIN', u'FGM', u'FGA', u'FG_PCT', 
+LINEUP_BOX_SCORE_PER_GAME_FEATURES = [u'GROUP_NAME', u'GP', u'MIN', u'FGM', u'FGA', u'FG_PCT', 
     u'FG3M', u'FG3A', u'FG3_PCT', u'FTM', u'FTA', u'FT_PCT', u'OREB', u'DREB', u'AST', u'TOV', u'PTS', u'PLUS_MINUS']
     
 # Create a temporary table for each separate data source, merge tables, and then drop temporary tables
@@ -30,6 +30,7 @@ def drop_player_background_table(cursor):
 def insert_player_background_table(cursor, player_ids):
     requests_headers = {'user-agent': db_constants.USER_AGENT}
     for player_id in player_ids:
+        print player_id
         url = "http://stats.nba.com/stats/commonplayerinfo?LeagueID=00&PlayerID=%s&SeasonType=Regular+Season" % player_id
         response = requests.get(url, headers = requests_headers)
         headers = response.json()['resultSets'][0]['headers']
@@ -212,17 +213,46 @@ def create_lineup_traditional_stats(cursor):
     return 0    
 
 def insert_lineup_traditional_stats(cursor):
-    stats_url = "http://stats.nba.com/stats/leaguedashlineups?Conference=&DateFrom=&DateTo=&Division=&GameID=&GameSegment=&GroupQuantity=5&LastNGames=0&LeagueID=00&Location=&MeasureType=Base&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=PerGame&Period=0&PlusMinus=N&Rank=N&Season=2015-16&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&TeamID=0&VsConference=&VsDivision="
     requests_headers = {'user-agent': db_constants.USER_AGENT}
-    response = requests.get(stats_url, headers = requests_headers)
-    headers = response.json()['resultSets'][0]['headers']
-    box_score_data = response.json()['resultSets'][0]['rowSet']
+    cursor.execute("SELECT team_id FROM team_overview;")
+    team_ids = [x[0] for x in cursor.fetchall()]
+    for team_id in team_ids:
+        print team_id
+        team_lineup_url = "http://stats.nba.com/stats/teamdashlineups?DateFrom=&DateTo=&GameID=&GameSegment=&GroupQuantity=5&LastNGames=0&LeagueID=00&Location=&MeasureType=Base&Month=0&OpponentTeamID=0&Outcome=&PaceAdjust=N&PerMode=PerGame&Period=0&PlusMinus=N&Rank=N&Season=2015-16&SeasonSegment=&SeasonType=Regular+Season&TeamID=%s&VsConference=&VsDivision=" % team_id
+        while True:
+            try:
+                response = requests.get(team_lineup_url, headers = requests_headers)
+            except ValueError:
+                print 'Decoding JSON has failed'
+                continue
+            break
+        headers = response.json()['resultSets'][1]['headers']
+        box_score_data = response.json()['resultSets'][1]['rowSet']
+        lineup_box_score_feature_index = [i for i, box_score_feature in enumerate(headers) if box_score_feature in LINEUP_BOX_SCORE_PER_GAME_FEATURES]
+        for row in box_score_data:
+            #print headers
+            #print row
+            data = list(itemgetter(*lineup_box_score_feature_index)(row))
+            data.insert(1, team_id)
+            data = tuple(data)
+            #print LINEUP_BOX_SCORE_PER_GAME_FEATURES
+            #print data
+            cursor.execute(cursor.mogrify("""INSERT INTO lineup_traditional_stats VALUES %s""", (data,)))
+    return 0
+'''
+requests_headers = {'user-agent': db_constants.USER_AGENT}
+cursor.execute("SELECT team_id FROM team_overview;")
+team_ids = [x[0] for x in cursor.fetchall()]
+for team_id in team_ids:
+    team_lineup_url = "http://stats.nba.com/stats/teamdashlineups?DateFrom=&DateTo=&GameID=&GameSegment=&GroupQuantity=5&LastNGames=0&LeagueID=00&Location=&MeasureType=Base&Month=0&OpponentTeamID=0&Outcome=&PaceAdjust=N&PerMode=PerGame&Period=0&PlusMinus=N&Rank=N&Season=2015-16&SeasonSegment=&SeasonType=Regular+Season&TeamID=%s&VsConference=&VsDivision=" % team_id
+    response = requests.get(team_lineup_url, headers = requests_headers)
+    headers = response.json()['resultSets'][1]['headers']
+    box_score_data = response.json()['resultSets'][1]['rowSet']
     lineup_box_score_feature_index = [i for i, box_score_feature in enumerate(headers) if box_score_feature in LINEUP_BOX_SCORE_PER_GAME_FEATURES]
     for row in box_score_data:
         data = tuple(itemgetter(*lineup_box_score_feature_index)(row))
         cursor.execute(cursor.mogrify("""INSERT INTO lineup_traditional_stats VALUES %s""", (data,)))
-    return 0
-
+'''        
 def update_lineup_traditional_stats(cursor):
     drop_lineup_traditional_stats(cursor)
     create_lineup_traditional_stats(cursor)
@@ -238,7 +268,7 @@ def create_team_overview(cursor):
     return 0
 
 def insert_team_overview(cursor):
-    team_url = "http://stats.nba.com/stats/leaguedashteamstats?Conference=&DateFrom=&DateTo=&Division=&GameScope=&GameSegment=&LastNGames=0&LeagueID=00&Location=&MeasureType=Base&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=PerGame&Period=0&PlayerExperience=&PlayerPosition=&PlusMinus=N&Rank=N&Season=2015-16&SeasonSegment=&SeasonType=Playoffs&ShotClockRange=&StarterBench=&TeamID=0&VsConference=&VsDivision="
+    team_url = "http://stats.nba.com/stats/leaguedashteamstats?Conference=&DateFrom=&DateTo=&Division=&GameScope=&GameSegment=&LastNGames=0&LeagueID=00&Location=&MeasureType=Base&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=PerGame&Period=0&PlayerExperience=&PlayerPosition=&PlusMinus=N&Rank=N&Season=2015-16&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&StarterBench=&TeamID=0&VsConference=&VsDivision="
     requests_headers = {'user-agent': db_constants.USER_AGENT}
     response = requests.get(team_url, headers = requests_headers)
     headers = response.json()['resultSets'][0]['headers']
@@ -253,23 +283,28 @@ def update_team_overview(cursor):
     create_team_overview(cursor)
     insert_team_overview(cursor)
     
+# Don't drop lineup_traditional_stats
+# Don't drop player_background for now (regular season over so no need for updating)
 def main():
     # Connect to data base
     conn_string = "host='localhost' dbname='development' user='postgres' password='steph43'"
     conn = psycopg2.connect(conn_string)
     cursor = conn.cursor()
-    print "Running"
+    print "Updating player data"
     update_active_nba_player_id_table(cursor)
+    print "Active NBA player completed"
     update_player_background(cursor)
+    print "Player background completed"
     update_combine_anthro_table(cursor)
     update_player_traditional_stats(cursor)
     update_player_data(cursor)
     drop_active_nba_player_id_table(cursor)
-    drop_player_background_table(cursor)
+    #drop_player_background_table(cursor)
     drop_combine_anthro_table(cursor)
     drop_player_traditional_stats(cursor)
-    update_lineup_traditional_stats(cursor)
+    print "Updating lineup data"
     update_team_overview(cursor)
+    update_lineup_traditional_stats(cursor)
     conn.commit()
     conn.close()
 
@@ -282,4 +317,16 @@ conn = psycopg2.connect(conn_string)
 cursor = conn.cursor()
 create_player_data(cursor)
 insert_player_data(cursor)
+'''
+
+'''
+    stats_url = "http://stats.nba.com/stats/leaguedashlineups?Conference=&DateFrom=&DateTo=&Division=&GameID=&GameSegment=&GroupQuantity=5&LastNGames=0&LeagueID=00&Location=&MeasureType=Base&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=PerGame&Period=0&PlusMinus=N&Rank=N&Season=2015-16&SeasonSegment=&SeasonType=Regular+Season&ShotClockRange=&TeamID=0&VsConference=&VsDivision="
+    requests_headers = {'user-agent': db_constants.USER_AGENT}
+    response = requests.get(stats_url, headers = requests_headers)
+    headers = response.json()['resultSets'][0]['headers']
+    box_score_data = response.json()['resultSets'][0]['rowSet']
+    lineup_box_score_feature_index = [i for i, box_score_feature in enumerate(headers) if box_score_feature in LINEUP_BOX_SCORE_PER_GAME_FEATURES]
+    for row in box_score_data:
+        data = tuple(itemgetter(*lineup_box_score_feature_index)(row))
+        cursor.execute(cursor.mogrify("""INSERT INTO lineup_traditional_stats VALUES %s""", (data,)))
 '''
