@@ -48,7 +48,7 @@ def update_player_background(cursor, drop = False):
     cursor.execute("SELECT player_id FROM temp_player_id;")
     active_player_ids = cursor.fetchall()
     active_player_ids = [x[0] for x in active_player_ids]
-    cursor.execute("SELECT player_id FROM temp_player_background;")
+    cursor.execute("SELECT player_id FROM temp_player_background;") # change from temp_player_background to player_data
     curr_player_ids = cursor.fetchall()
     curr_player_ids = [x[0] for x in curr_player_ids]
     player_ids_to_add = []
