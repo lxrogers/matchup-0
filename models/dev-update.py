@@ -30,7 +30,7 @@ def drop_player_background_table(cursor):
 def insert_player_background_table(cursor, player_ids):
     requests_headers = {'user-agent': db_constants.USER_AGENT}
     for player_id in player_ids:
-        #print player_id
+        print player_id
         url = "http://stats.nba.com/stats/commonplayerinfo?LeagueID=00&PlayerID=%s&SeasonType=Regular+Season" % player_id
         response = requests.get(url, headers = requests_headers)
         headers = response.json()['resultSets'][0]['headers']
@@ -44,7 +44,7 @@ def insert_player_background_table(cursor, player_ids):
 def update_player_background(cursor, drop = False):
     if drop:
         drop_player_background_table(cursor)
-    create_player_background_table(cursor)
+        create_player_background_table(cursor)
     cursor.execute("SELECT player_id FROM temp_player_id;")
     active_player_ids = cursor.fetchall()
     active_player_ids = [x[0] for x in active_player_ids]
