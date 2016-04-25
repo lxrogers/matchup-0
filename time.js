@@ -24,6 +24,10 @@ exports.getTimeTag = function(event_status_json) {
         return "final";
       else if (event_status_json.period == 2)
         return "halftime";
+      else if (event_status_json.period == 3)
+        return "end third";
+      else if (event_status_json.period == 1)
+        return "end first";
       else
         return "hasn't started yet";
   }

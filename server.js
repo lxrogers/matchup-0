@@ -16,6 +16,7 @@ var tonydb = require('./tonydb')
 
 var games_updating = 0;
 var retrieved_player_data = false;
+var retrieved_lineup_data = false;
 //
 // ## SimpleServer `SimpleServer(obj)`
 //
@@ -50,12 +51,15 @@ var matchupSockets = [];
 var schedule = {}; // map of gameID -> scheduleGame
 var liveGames = {}; // map of gameID -> liveGame 
 var playerData = {}; // map of GameID -> Player key -> data object
+var lineupData = {}; // Teams -> LineupKey -> Linup Data
 
 io.on('connection', function (socket) {
     console.log("socket connected " + socket);
     console.log("emitting to socket: ",Object.keys(playerData).length)
     socket.emit('liveupdate', packageLiveGames());
     socket.emit('data', playerData);
+    socket.emit('lineupdata', lineupData)
+    
     
     
     matchupSockets.push(socket);
@@ -86,18 +90,36 @@ function updateSchedule(callback) {
   });
 }
 
+function updateLineupData() {
+  lineupData = {};
+  for (var gameid in liveGames) {
+    (function(id) {
+      if(liveGames[id].timetag == "hasn't started yet") {
+        console.log(id + "hasn't started")
+      }
+      tools.getLineupData(liveGames[id], function(error, data) {
+        if (!lineupData[id]) {
+          lineupData[id] = [];
+        }
+        lineupData[id].push(data);
+      })
+      
+    })(gameid)
+  }
+  retrieved_lineup_data = true;
+}
+
 function updatePlayerData() {
   playerData = {};
   for (var gameid in liveGames) {
     (function(id) {
       if (liveGames[id].timetag == "hasn't started yet") {
         console.log(id + "hasn't started")
+        playerData[id] = {error: "game hasn't started"};
+        return;
       }
-      console.log("retrieving ", id)
       tools.getPlayerData(liveGames[id], function(error, data) {
         playerData[id] = data;
-        console.log("retrieved ", id);
-        //console.log(playerData);
       });
     })(gameid)
     
@@ -109,7 +131,6 @@ function updatePlayerData() {
 //update livegames using schedule
 function updateLiveGames(callback) {
   games_updating = Object.keys(schedule).length
-  
   
   for (var gid in schedule) {
     tools.getLiveGame(gid, function(err, liveGame) {
@@ -128,6 +149,9 @@ function updateLiveGame(key, liveGame) {
     broadcast('liveupdate', packageLiveGames());
     if (retrieved_player_data === false) {
       updatePlayerData();
+    }
+    if (retrieved_lineup_data === false) {
+      updateLineupData();
     }
   }
 }

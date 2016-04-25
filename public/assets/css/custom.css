@@ -5,7 +5,13 @@ a {
 }
 .section.title {
     margin-top: 3%;
+    background-color: #EEE;
 }
+
+.section {
+    
+}
+
 .logo {
     margin-bottom: 3%;
 }
@@ -31,7 +37,60 @@ a {
 }
 /*-------------------------- GAME PAPGES ------------------ */
 .player-table {
-    align: center;        
+    align: center;
+}
+
+.section.stats {
+    
+}
+
+/*----------------------- COURT VISUAL --------------------*/
+.section.court {
+    background-image: url('../img/court-medium.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    font-family: 'Open Sans', sans-serif;
+}
+
+.court-table {
+    width: 100%;
+    height: 100%;
+    border-collapse: collapse;
+    margin: 1% 0;
+}
+
+.court-table td {
+    height: 7rem;
+    width: 12%;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.court-name {
+    font-weight: 600;
+    font-size: 1.1em;
+}
+
+.court-position {
+    color: gray;
+    font-size: .85em;
+}
+
+.court-stat {
+    font-weight: 800;
+    
+    color: #62bcfa;
+}
+
+#selector {
+    color: #62bcfa;
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 800;
+}
+
+.div-inline {
+    display: inline-block;
 }
 /*---------------------- GAME BOXES -----------------------*/
 

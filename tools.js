@@ -135,10 +135,6 @@ function getKeyFromPlayer(player) {
   return ""+player.player.firstName + " " + player.player.lastName;
 }
 
-function extraFormatThen(gameData, playerData, callback) {
-  
-}
-
 exports.getPlayerData = function(gameData, callback) {
   var team1 = gameData.teams[0]['boxscore'].playerstats;
   var team2 = gameData.teams[1]['boxscore'].playerstats;
@@ -150,10 +146,15 @@ exports.getPlayerData = function(gameData, callback) {
   for (var player in team2) {
     playerKeys.push(getKeyFromPlayer(team2[player]));
   }
-  //console.log(playerKeys);
   tonydb.getPlayerData(playerKeys, callback);
-  //make db call to tony db
 }
 
-
-
+exports.getLineupData = function(gameData, callback) {
+  var team1 = gameData.teams[0].location + " " + gameData.teams[0].nickname;
+  var team2 = gameData.teams[1].location + " " + gameData.teams[1].nickname;
+  console.log("getting lineup data for ", team1, " and ",  team2);
+  
+  tonydb.getLineupDataForTeam(team1, callback);
+  tonydb.getLineupDataForTeam(team2, callback);
+  
+}
