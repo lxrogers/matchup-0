@@ -18,7 +18,7 @@ LINEUP_BOX_SCORE_PER_GAME_FEATURES = [u'GROUP_NAME', u'GP', u'MIN', u'FGM', u'FG
 
 def create_player_background_table(cursor):
     cursor.execute("""
-    CREATE TABLE temp_player_background (PLAYER_ID integer NOT NULL, BIRTHDATE varchar(40) NULL, SCHOOL varchar(40) NULL, 
+    CREATE TABLE IF NOT EXISTS temp_player_background (PLAYER_ID integer NOT NULL, BIRTHDATE varchar(40) NULL, SCHOOL varchar(40) NULL, 
     COUNTRY varchar(60) NULL, HEIGHT varchar(5) NULL, WEIGHT integer NULL, SEASON_EXP integer NULL, POSITION varchar(40) NULL) 
     """)
     return 0
@@ -44,7 +44,7 @@ def insert_player_background_table(cursor, player_ids):
 def update_player_background(cursor, drop = False):
     if drop:
         drop_player_background_table(cursor)
-        create_player_background_table(cursor)
+    create_player_background_table(cursor)
     cursor.execute("SELECT player_id FROM temp_player_id;")
     active_player_ids = cursor.fetchall()
     active_player_ids = [x[0] for x in active_player_ids]
