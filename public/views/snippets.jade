@@ -1,0 +1,24 @@
+			.row
+        .one.column
+          br
+        .five.columns.left
+          h5(ng-bind="myGame.teams[0].nickname")
+          table.player-table(align="left")
+            thead
+              th Current Lineup
+              th(ng-bind="selectedStat")
+            tbody
+              tr(ng-repeat="player in myGame.teams[0]['boxscore'].playerstats")
+                td(ng-if="player.onCourt == 'true'" ng-bind="player.player.uniform + ' ' + player.player.firstName + ' ' + player.player.lastName")
+                td(ng-if="player.onCourt == 'true'" ng-bind="playerData[player.player.firstName + ' ' + player.player.lastName][selectedStat]")
+                
+        .five.columns.right
+          h5(ng-bind="myGame.teams[1].nickname")
+          table.player-table(align="right")
+            thead
+              th Current Lineup
+              th(ng-bind="selectedStat")
+            tbody
+              tr(ng-repeat="player in myGame.teams[1]['boxscore'].playerstats")
+                td(ng-if="player.onCourt == 'true'" ng-bind="player.player.uniform + ' ' + player.player.firstName + ' ' + player.player.lastName")
+                td(ng-if="player.onCourt == 'true'" ng-bind="playerData[player.player.firstName + ' ' + player.player.lastName][selectedStat]")
