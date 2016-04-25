@@ -3,8 +3,9 @@ a {
     text-decoration: none;
     color: inherit;
 }
-.section.title {
+.section.headline {
     margin-top: 3%;
+    padding: 15px 0 15px 0;
     background-color: #EEE;
 }
 
@@ -16,11 +17,7 @@ a {
     margin-bottom: 3%;
 }
 
-#headline {
-    text-align: center;
-}
-
-#scoreline {
+.headline {
     text-align: center;
 }
 

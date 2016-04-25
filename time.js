@@ -14,25 +14,31 @@ var QUARTER_TO_NAME = {
     1: "1st",
     2: "2nd",
     3: "3rd",
-    4: "4th"
+    4: "4th",
+    5: "OT1",
+    6: "OT2",
+    7: "OT3",
+    8: "OT4"
+}
+
+var INACTIVE_QUARTERS = {
+  1: "End First",
+  2: "Halftime",
+  3: "End Third",
+  4: "End Fourth",
+  5: "End OT1",
+  6: "End OT2",
+  7: "End OT3",
+  8: "End OT4",
 }
 
 exports.getTimeTag = function(event_status_json) {
   var name = QUARTER_TO_NAME[event_status_json.period];
   if (!event_status_json.isActive) {
-      if (event_status_json.period == 4)
-        return "final";
-      else if (event_status_json.period == 2)
-        return "halftime";
-      else if (event_status_json.period == 3)
-        return "end third";
-      else if (event_status_json.period == 1)
-        return "end first";
-      else
-        return "hasn't started yet";
+     return INACTIVE_QUARTERS[event_status_json.period];
   }
-  if (isEndOfQuarter(event_status_json)) {
-      return "End Of " + name;
+  if (event_status_json.name != "In-Progress") {
+    return "final"
   }
   else {
       return name + " - " + getTime(event_status_json);

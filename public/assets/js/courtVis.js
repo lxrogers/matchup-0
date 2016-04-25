@@ -32,6 +32,10 @@ var POSITION_MAP = {
 
 function classifyPlayer(player, playerData) {
 	var key = player.firstName + " " + player.lastName;
+	console.log(key, playerData[key]);
+	if (typeof playerData[key] === 'undefined') {
+		return "GUARD";
+	}
 	return POSITION_MAP[playerData[key]['position']]
 }
 

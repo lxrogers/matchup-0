@@ -43,6 +43,7 @@ html(lang='en', ng-app='app')
         
         socket.on(dataEvent, function(playerData) {
             $scope.playerData = playerData[$scope.gid];
+            console.log($scope.playerData)
             $scope.statHeaders = gameTools.getStatHeaders($scope.playerData);
             
             console.log("data event ", $scope.playerData);
@@ -60,28 +61,30 @@ html(lang='en', ng-app='app')
     GameController.$inject = ['$scope'];
     angular.module('app', []).controller('GameController', GameController);
   body(ng-controller='GameController')
-  .section.title
-      .container
-        #logo.row
-          a(href="/"): h1 Matchup!
-        #headline.row
-          h2 #{livegame.teams[0].location} #{livegame.teams[0].nickname} vs. #{livegame.teams[1].location} #{livegame.teams[1].nickname}
-        #scoreline.row
-          .two.columns
-            h4(ng-bind="myGame.teams[0].score")
-          .eight.columns
-            h4(ng-bind='myGame.timetag')
-          .two.columns
-            h4(ng-bind="myGame.teams[1].score")
+  .section.nav
+    .container
+      #logo.row
+        a(href="/"): h1 Matchup!
+  .section.headline
+    .container
+      .row
+        h2 #{livegame.teams[0].location} #{livegame.teams[0].nickname} vs. #{livegame.teams[1].location} #{livegame.teams[1].nickname}
+      .row
+        .two.columns
+          h4(ng-bind="myGame.teams[0].score")
+        .eight.columns
+          h4(ng-bind='myGame.timetag')
+        .two.columns
+          h4(ng-bind="myGame.teams[1].score")
   .section.stats
     .container
       .row 
         .one.column
         br
-        .two.columns
+        .five.columns
           table
             tr
-              td Stat:
+              td Showing stats for: 
               td 
                 select#selector(ng-change="changeStat()" ng-model="selectedStat" ng-options="option.value as option.name for option in statHeaders")
   .section.court

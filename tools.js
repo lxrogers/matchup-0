@@ -136,6 +136,9 @@ function getKeyFromPlayer(player) {
 }
 
 exports.getPlayerData = function(gameData, callback) {
+  if (!gameData.teams[0]['boxscore']) {
+    return;
+  }
   var team1 = gameData.teams[0]['boxscore'].playerstats;
   var team2 = gameData.teams[1]['boxscore'].playerstats;
   var playerKeys = [];
