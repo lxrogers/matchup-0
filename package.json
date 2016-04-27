@@ -12,6 +12,6 @@
     "pg-promise": "3.4.1",
     "jQuery": "1.7.4",
     "xmlhttprequest": "1.8.0",
-    "jade": "1.11.0",
+    "jade": "1.11.0"
   }
 }
