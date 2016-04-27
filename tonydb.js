@@ -1,9 +1,9 @@
 var pgp = require('pg-promise')();
 
 var cn = {
-    host: 'localhost', // server name or IP address; 
+    host: process.env.DATABASE_URL,//localhost', // server name or IP address; 
     port: 5432,
-    database: 'development',
+    database: 'development',//'development',
     user: 'postgres',
     password: 'steph43'
 };
