@@ -1,14 +1,16 @@
 var pgp = require('pg-promise')();
 
 var cn = {
-    host: process.env.DATABASE_URL,//localhost', // server name or IP address; 
+    host: "postgres://iasqujtxnqaory:Djrc1hAUVgierbFko-5h9BWY3t@ec2-54-243-226-163.compute-1.amazonaws.com:5432/d9ri30ff2085qu",//process.env.DATABASE_URL,//localhost', // server name or IP address; 
     port: 5432,
     database: 'development',//'development',
     user: 'postgres',
     password: 'steph43'
 };
 
-var db = pgp(cn);
+var constring = "postgres://iasqujtxnqaory:Djrc1hAUVgierbFko-5h9BWY3t@ec2-54-243-226-163.compute-1.amazonaws.com:5432/d9ri30ff2085qu";
+
+var db = pgp(constring);
 
 var exports = module.exports = {};
 
