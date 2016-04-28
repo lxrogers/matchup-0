@@ -26,12 +26,16 @@ var retrieved_lineup_data = false;
 
 //networking
 var router = express();
+
 var server = http.createServer(router);
 var io = socketio.listen(server);
 router.use(express.static(__dirname + '/public'));
 router.set('view engine', 'jade');
 router.set('views', './public/views')
 io.set('log level', 1);
+
+console.log("environment: ", router.settings.env)
+tonydb.initialize(router.settings.env);
 
 //router.use(express.static(path.resolve(__dirname, 'client')));
 router.get('/', function (req, res) {

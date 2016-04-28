@@ -1,18 +1,27 @@
 var pgp = require('pg-promise')();
 
 var cn = {
-    host: "postgres://iasqujtxnqaory:Djrc1hAUVgierbFko-5h9BWY3t@ec2-54-243-226-163.compute-1.amazonaws.com:5432/d9ri30ff2085qu",//process.env.DATABASE_URL,//localhost', // server name or IP address; 
+    host: 'localhost', // server name or IP address; 
     port: 5432,
     database: 'development',//'development',
     user: 'postgres',
     password: 'steph43'
 };
 
-var constring = "postgres://iasqujtxnqaory:Djrc1hAUVgierbFko-5h9BWY3t@ec2-54-243-226-163.compute-1.amazonaws.com:5432/d9ri30ff2085qu";
+var constring = process.env.DATABASE_URL;
 
-var db = pgp(constring);
+var db;
 
 var exports = module.exports = {};
+
+exports.initialize = function(environment) {
+    if (environment == "development") {
+        db = pgp(cn);
+    }
+    else {
+        db = pgp(constring);
+    }
+}
 
 function printData(error, data) {
     console.log("LAWRENCE CALLBACK: ")
@@ -93,16 +102,6 @@ exports.getLineupKey = function(players) {
     return formatted_player_arr.join(' - ')
     // return key string
 }
-
-//this could be in my file
-var todays_players = ["Dwyane Wade", "LeBron James", "Kevin Durant"];
-
-exports.getLineupDataForTeam("Miami Heat", function(error, data) {
-    var key = exports.getLineupKey(test_players)
-    console.log(data[key])  
-})
-
-exports.getPlayerData(todays_players, printData)
 
 
 pgp.end();
