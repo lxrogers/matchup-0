@@ -1,6 +1,6 @@
 var pgp = require('pg-promise')();
 
-var cn = {
+var dev_cn = {
     host: 'localhost', // server name or IP address; 
     port: 5432,
     database: 'development',//'development',
@@ -8,7 +8,7 @@ var cn = {
     password: 'steph43'
 };
 
-var constring = process.env.DATABASE_URL;
+var prod_cn = process.env.DATABASE_URL;
 
 var db;
 
@@ -16,10 +16,10 @@ var exports = module.exports = {};
 
 exports.initialize = function(environment) {
     if (environment == "development") {
-        db = pgp(cn);
+        db = pgp(dev_cn);
     }
-    else {
-        db = pgp(constring);
+    else if (environment == "production") {
+        db = pgp(prod_cn);
     }
 }
 
